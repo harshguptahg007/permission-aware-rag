@@ -1,0 +1,47 @@
+# Acme access control list (readable form).
+# Converted to OpenFGA tuples by the authz loader (Phase 4).
+#
+# Rules:
+#   - A doc's folder = its directory under data/corpus/ (must match frontmatter `folder`).
+#   - Folder viewers inherit DOWN to child folders and docs (OpenFGA `viewer from parent`).
+#     A child folder can only widen access, so restricted folders are siblings, not children.
+#   - Frontmatter `sensitivity` is display/eval only. Authorization never reads it.
+
+version: 1
+
+users:
+  alice: { title: Software Engineer }
+  bob:   { title: Engineering Manager }
+  carol: { title: HR Generalist }
+  dave:  { title: Head of People }
+  erin:  { title: Finance Analyst }
+  frank: { title: CFO }
+  grace: { title: General Counsel }
+  henry: { title: CEO }
+  ivan:  { title: External Contractor }
+
+teams:
+  engineering: { members: [user:alice, user:bob] }
+  people:      { members: [user:carol, user:dave] }
+  finance:     { members: [user:erin, user:frank] }
+  leadership:  { members: [user:dave, user:frank, user:grace, user:henry] }
+  # Nested teams -> OpenFGA usersets (team:<name>#member). ivan is deliberately excluded.
+  all-staff:
+    members: [team:engineering, team:people, team:finance, team:leadership]
+
+folders:
+  acme:               { parent: null, viewers: [user:henry] }   # root grant: CEO inherits everything
+  company:            { parent: acme, viewers: [team:all-staff] }
+  eng:                { parent: acme, viewers: [team:engineering] }
+  eng-partner:        { parent: eng,  viewers: [user:ivan] }      # depth 3: eng inherits, ivan sees only this
+  eng-managers:       { parent: acme, viewers: [user:bob] }
+  hr:                 { parent: acme, viewers: [team:people] }
+  hr-confidential:    { parent: acme, viewers: [user:dave] }
+  finance:            { parent: acme, viewers: [team:finance] }
+  finance-restricted: { parent: acme, viewers: [user:frank] }
+  legal:              { parent: acme, viewers: [user:grace] }
+  exec:               { parent: acme, viewers: [team:leadership] }
+
+# Per-document exceptions on top of folder inheritance.
+doc_grants:
+  eng-api-style-guide: [user:ivan]   # direct doc-level share to the contractor

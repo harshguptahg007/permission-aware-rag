@@ -37,3 +37,17 @@ Each entry: context · options considered · chosen · why · trade-off.
 - **Chosen:** (a)
 - **Why:** Easy to review for leak cases and to build permission-adversarial golden questions from.
 - **Trade-off:** Needs a small converter (Phase 4); two representations of the same ACLs to keep consistent.
+
+## 2026-11-24 · Doc → folder mapping: folder path + frontmatter, validated
+- **Options:** (a) corpus folder path + frontmatter `folder`, loader asserts they match; (b) full docs list in `acl.yaml`; (c) frontmatter only
+- **Chosen:** (a). `acl.yaml` holds users, teams, folders and per-doc exceptions (`doc_grants`) only.
+- **Why:** One source of truth for doc placement; `acl.yaml` stays short enough to review for leaks; a mismatch fails loudly at ingest.
+- **Trade-off:** A doc's permissions are split across two places (its folder in `acl.yaml` + any `doc_grants` entry).
+
+## 2026-11-24 · ACL shape: restricted folders as siblings, CEO via root grant
+- **Context:** OpenFGA `viewer from parent` propagates viewers *down* the tree, so a child folder can only widen access, never narrow it.
+- **Chosen:** Restricted folders (`hr-confidential`, `finance-restricted`, `legal`, `exec`, `eng-managers`) are siblings of their department folder under root `acme`, not children. CEO is a viewer on `acme` and inherits everything. `all-staff` is composed of other teams (`team#member`), so the contractor is outside it.
+- **Options for CEO access:** (a) root grant + inheritance, (b) explicit grant per folder.
+- **Why (a):** Demonstrates multi-hop inheritance (`acme → eng → eng-partner → doc`) and gives one "sees everything" control user.
+- **Trade-off:** A root grant is powerful; a mistaken root viewer would leak the whole corpus. The leak eval covers it.
+- **Note:** `sensitivity` in frontmatter is for display/eval only. Authorization never reads it.
